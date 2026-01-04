@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
+import Auth from './Auth';
 
 interface Message {
   id: number;
@@ -18,6 +20,7 @@ interface Message {
 interface Chat {
   id: number;
   name: string;
+  username: string;
   avatar: string;
   lastMessage: string;
   time: string;
@@ -25,44 +28,13 @@ interface Chat {
   online: boolean;
 }
 
-const initialChats: Chat[] = [
-  {
-    id: 1,
-    name: 'Анна Смирнова',
-    avatar: '',
-    lastMessage: 'Привет! Как дела?',
-    time: '14:32',
-    unread: 2,
-    online: true,
-  },
-  {
-    id: 2,
-    name: 'Команда дизайна',
-    avatar: '',
-    lastMessage: 'Отправил макеты',
-    time: '13:15',
-    unread: 0,
-    online: false,
-  },
-  {
-    id: 3,
-    name: 'Максим Иванов',
-    avatar: '',
-    lastMessage: 'Созвон в 15:00',
-    time: '12:45',
-    unread: 1,
-    online: true,
-  },
-  {
-    id: 4,
-    name: 'Проект Apollo',
-    avatar: '',
-    lastMessage: 'Обновил документацию',
-    time: '11:20',
-    unread: 0,
-    online: false,
-  },
-];
+interface User {
+  email: string;
+  username: string;
+  name: string;
+}
+
+const initialChats: Chat[] = [];
 
 const initialMessages: Message[] = [
   { id: 1, text: 'Привет! Как дела?', sender: 'other', time: '14:30' },
@@ -71,12 +43,16 @@ const initialMessages: Message[] = [
 ];
 
 function Index() {
-  const [selectedChat, setSelectedChat] = useState<Chat>(initialChats[0]);
+  const [user, setUser] = useState<User | null>(null);
+  const [chats, setChats] = useState<Chat[]>(initialChats);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [searchUsername, setSearchUsername] = useState('');
   const [settings, setSettings] = useState({
     lastSeen: true,
     readReceipts: true,
@@ -92,6 +68,47 @@ function Index() {
     language: 'ru',
   });
 
+  useEffect(() => {
+    const savedUser = localStorage.getItem('bublikUser');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (settings.darkTheme) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [settings.darkTheme]);
+
+  const handleAuthComplete = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem('bublikUser', JSON.stringify(userData));
+  };
+
+  const handleAddContact = () => {
+    if (!searchUsername.trim()) return;
+    const newChat: Chat = {
+      id: Date.now(),
+      name: searchUsername,
+      username: searchUsername,
+      avatar: '',
+      lastMessage: 'Новый контакт',
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      unread: 0,
+      online: false,
+    };
+    setChats([...chats, newChat]);
+    setSearchUsername('');
+    setShowAddContact(false);
+  };
+
+  if (!user) {
+    return <Auth onAuthComplete={handleAuthComplete} />;
+  }
+
   const sendMessage = () => {
     if (newMessage.trim()) {
       const message: Message = {
@@ -105,8 +122,9 @@ function Index() {
     }
   };
 
-  const filteredChats = initialChats.filter((chat) =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredChats = chats.filter((chat) =>
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    chat.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -117,16 +135,26 @@ function Index() {
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
-              Messenger
+              BublikChat
             </h1>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowProfile(!showProfile)}
-              className="hover:bg-primary/10"
-            >
-              <Icon name="Menu" size={20} />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAddContact(true)}
+                className="hover:bg-primary/10"
+              >
+                <Icon name="UserPlus" size={20} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowProfile(!showProfile)}
+                className="hover:bg-primary/10"
+              >
+                <Icon name="Menu" size={20} />
+              </Button>
+            </div>
           </div>
           <div className="relative">
             <Icon
@@ -135,7 +163,7 @@ function Index() {
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             />
             <Input
-              placeholder="Поиск..."
+              placeholder="Поиск по имени или @username..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-card border-border"
@@ -145,13 +173,29 @@ function Index() {
 
         {/* Chat List */}
         <ScrollArea className="flex-1">
-          {filteredChats.map((chat) => (
-            <button
-              key={chat.id}
-              onClick={() => setSelectedChat(chat)}
-              className={`w-full p-4 flex items-center gap-3 hover:bg-accent/10 transition-all border-b border-border/50 ${
-                selectedChat.id === chat.id ? 'bg-accent/20' : ''
-              }`}
+          {filteredChats.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <Icon name="MessageCircle" size={48} className="text-muted-foreground mb-4" />
+              <h3 className="font-semibold mb-2">Нет чатов</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Найдите друзей по username и начните общение
+              </p>
+              <Button
+                onClick={() => setShowAddContact(true)}
+                className="gradient-primary text-white"
+              >
+                <Icon name="UserPlus" size={18} className="mr-2" />
+                Добавить контакт
+              </Button>
+            </div>
+          ) : (
+            filteredChats.map((chat) => (
+              <button
+                key={chat.id}
+                onClick={() => setSelectedChat(chat)}
+                className={`w-full p-4 flex items-center gap-3 hover:bg-accent/10 transition-all border-b border-border/50 ${
+                  selectedChat?.id === chat.id ? 'bg-accent/20' : ''
+                }`}
             >
               <div className="relative">
                 <Avatar className="w-12 h-12">
@@ -166,7 +210,10 @@ function Index() {
               </div>
               <div className="flex-1 text-left">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-semibold text-foreground">{chat.name}</h3>
+                  <div>
+                    <h3 className="font-semibold text-foreground">{chat.name}</h3>
+                    <p className="text-xs text-muted-foreground">@{chat.username}</p>
+                  </div>
                   <span className="text-xs text-muted-foreground">{chat.time}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -181,28 +228,31 @@ function Index() {
                 </div>
               </div>
             </button>
-          ))}
+            ))
+          )}
         </ScrollArea>
       </div>
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Chat Header */}
-        <div className="p-4 border-b border-border flex items-center justify-between glass-effect">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={selectedChat.avatar} />
-              <AvatarFallback className="gradient-primary text-white font-semibold">
-                {selectedChat.name.split(' ').map((n) => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="font-semibold text-foreground">{selectedChat.name}</h2>
-              <p className="text-xs text-muted-foreground">
-                {selectedChat.online ? 'в сети' : 'был(а) недавно'}
-              </p>
-            </div>
-          </div>
+        {selectedChat ? (
+          <>
+            {/* Chat Header */}
+            <div className="p-4 border-b border-border flex items-center justify-between glass-effect">
+              <div className="flex items-center gap-3">
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={selectedChat.avatar} />
+                  <AvatarFallback className="gradient-primary text-white font-semibold">
+                    {selectedChat.name.split(' ').map((n) => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="font-semibold text-foreground">{selectedChat.name}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    @{selectedChat.username} • {selectedChat.online ? 'в сети' : 'был(а) недавно'}
+                  </p>
+                </div>
+              </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="icon" className="hover:bg-primary/10">
               <Icon name="Phone" size={20} />
@@ -263,6 +313,18 @@ function Index() {
             </Button>
           </div>
         </div>
+        </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Icon name="MessageSquare" size={64} className="text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Выберите чат</h3>
+              <p className="text-sm text-muted-foreground">
+                Начните общение с друзьями в BublikChat
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Profile Sidebar */}
@@ -282,11 +344,12 @@ function Index() {
           <div className="flex flex-col items-center mb-6">
             <Avatar className="w-24 h-24 mb-4">
               <AvatarFallback className="gradient-primary text-white text-2xl font-bold">
-                Я
+                {user.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <h3 className="text-lg font-semibold mb-1">Моё имя</h3>
-            <p className="text-sm text-muted-foreground">@username</p>
+            <h3 className="text-lg font-semibold mb-1">{user.name}</h3>
+            <p className="text-sm text-muted-foreground">@{user.username}</p>
+            <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
           </div>
           <div className="space-y-2">
             <Button variant="ghost" className="w-full justify-start hover:bg-primary/10">
@@ -304,13 +367,16 @@ function Index() {
               <Icon name="Settings" size={18} className="mr-3" />
               Настройки
             </Button>
-            <Button variant="ghost" className="w-full justify-start hover:bg-primary/10">
-              <Icon name="Moon" size={18} className="mr-3" />
-              Тёмная тема
-            </Button>
-            <Button variant="ghost" className="w-full justify-start hover:bg-primary/10">
-              <Icon name="Bell" size={18} className="mr-3" />
-              Уведомления
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start hover:bg-primary/10"
+              onClick={() => {
+                localStorage.removeItem('bublikUser');
+                setUser(null);
+              }}
+            >
+              <Icon name="LogOut" size={18} className="mr-3" />
+              Выйти из аккаунта
             </Button>
           </div>
         </div>
@@ -589,6 +655,52 @@ function Index() {
           </ScrollArea>
         </div>
       )}
+
+      {/* Add Contact Dialog */}
+      <Dialog open={showAddContact} onOpenChange={setShowAddContact}>
+        <DialogContent className="glass-effect border-border">
+          <DialogHeader>
+            <DialogTitle>Добавить контакт</DialogTitle>
+            <DialogDescription>
+              Найдите пользователя по username
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                @
+              </span>
+              <Input
+                type="text"
+                placeholder="username"
+                value={searchUsername}
+                onChange={(e) =>
+                  setSearchUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                }
+                onKeyPress={(e) => e.key === 'Enter' && handleAddContact()}
+                className="bg-card border-border pl-8"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddContact(false)}
+                className="flex-1"
+              >
+                Отмена
+              </Button>
+              <Button
+                onClick={handleAddContact}
+                disabled={!searchUsername}
+                className="flex-1 gradient-primary text-white"
+              >
+                <Icon name="UserPlus" size={18} className="mr-2" />
+                Добавить
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
