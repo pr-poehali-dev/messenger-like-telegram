@@ -3,6 +3,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
 
 interface Message {
@@ -73,6 +76,21 @@ function Index() {
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState({
+    lastSeen: true,
+    readReceipts: true,
+    typing: true,
+    calls: true,
+    groupInvites: true,
+    energySaving: false,
+    autoDownload: true,
+    notifications: true,
+    sounds: true,
+    vibration: true,
+    darkTheme: true,
+    language: 'ru',
+  });
 
   const sendMessage = () => {
     if (newMessage.trim()) {
@@ -275,7 +293,14 @@ function Index() {
               <Icon name="User" size={18} className="mr-3" />
               Редактировать профиль
             </Button>
-            <Button variant="ghost" className="w-full justify-start hover:bg-primary/10">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start hover:bg-primary/10"
+              onClick={() => {
+                setShowProfile(false);
+                setShowSettings(true);
+              }}
+            >
               <Icon name="Settings" size={18} className="mr-3" />
               Настройки
             </Button>
@@ -288,6 +313,280 @@ function Index() {
               Уведомления
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Settings Sidebar */}
+      {showSettings && (
+        <div className="w-96 border-l border-border glass-effect animate-slide-in-right overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-border">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Настройки</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSettings(false)}
+                className="hover:bg-primary/10"
+              >
+                <Icon name="X" size={20} />
+              </Button>
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1">
+            <div className="p-6 space-y-6">
+              {/* Конфиденциальность */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Shield" size={20} className="text-primary" />
+                  <h3 className="font-semibold text-lg">Конфиденциальность</h3>
+                </div>
+                <div className="space-y-4 ml-7">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Последнее посещение</p>
+                      <p className="text-xs text-muted-foreground">Видно всем</p>
+                    </div>
+                    <Switch 
+                      checked={settings.lastSeen}
+                      onCheckedChange={(checked) => setSettings({...settings, lastSeen: checked})}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Статус прочтения</p>
+                      <p className="text-xs text-muted-foreground">Отправлять уведомления о прочтении</p>
+                    </div>
+                    <Switch 
+                      checked={settings.readReceipts}
+                      onCheckedChange={(checked) => setSettings({...settings, readReceipts: checked})}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Статус набора</p>
+                      <p className="text-xs text-muted-foreground">Показывать когда печатаю</p>
+                    </div>
+                    <Switch 
+                      checked={settings.typing}
+                      onCheckedChange={(checked) => setSettings({...settings, typing: checked})}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Звонки</p>
+                      <p className="text-xs text-muted-foreground">Кто может мне звонить</p>
+                    </div>
+                    <Switch 
+                      checked={settings.calls}
+                      onCheckedChange={(checked) => setSettings({...settings, calls: checked})}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Приглашения в группы</p>
+                      <p className="text-xs text-muted-foreground">Кто может добавлять в группы</p>
+                    </div>
+                    <Switch 
+                      checked={settings.groupInvites}
+                      onCheckedChange={(checked) => setSettings({...settings, groupInvites: checked})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Энергосбережение */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Battery" size={20} className="text-primary" />
+                  <h3 className="font-semibold text-lg">Энергосбережение</h3>
+                </div>
+                <div className="space-y-4 ml-7">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Режим энергосбережения</p>
+                      <p className="text-xs text-muted-foreground">Снизить потребление батареи</p>
+                    </div>
+                    <Switch 
+                      checked={settings.energySaving}
+                      onCheckedChange={(checked) => setSettings({...settings, energySaving: checked})}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Автозагрузка медиа</p>
+                      <p className="text-xs text-muted-foreground">Скачивать фото и видео</p>
+                    </div>
+                    <Switch 
+                      checked={settings.autoDownload}
+                      onCheckedChange={(checked) => setSettings({...settings, autoDownload: checked})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Язык */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Globe" size={20} className="text-primary" />
+                  <h3 className="font-semibold text-lg">Язык</h3>
+                </div>
+                <div className="ml-7">
+                  <Select value={settings.language} onValueChange={(value) => setSettings({...settings, language: value})}>
+                    <SelectTrigger className="bg-card border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ru">Русский</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="de">Deutsch</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Оформление */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Palette" size={20} className="text-primary" />
+                  <h3 className="font-semibold text-lg">Оформление</h3>
+                </div>
+                <div className="space-y-4 ml-7">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Тёмная тема</p>
+                      <p className="text-xs text-muted-foreground">Включить тёмное оформление</p>
+                    </div>
+                    <Switch 
+                      checked={settings.darkTheme}
+                      onCheckedChange={(checked) => setSettings({...settings, darkTheme: checked})}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-3">Цветовая схема</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      <button className="w-full h-12 rounded-lg gradient-primary hover:scale-105 transition-transform" />
+                      <button className="w-full h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 hover:scale-105 transition-transform" />
+                      <button className="w-full h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 hover:scale-105 transition-transform" />
+                      <button className="w-full h-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 hover:scale-105 transition-transform" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Уведомления и звуки */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Bell" size={20} className="text-primary" />
+                  <h3 className="font-semibold text-lg">Уведомления и звуки</h3>
+                </div>
+                <div className="space-y-4 ml-7">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Уведомления</p>
+                      <p className="text-xs text-muted-foreground">Показывать уведомления</p>
+                    </div>
+                    <Switch 
+                      checked={settings.notifications}
+                      onCheckedChange={(checked) => setSettings({...settings, notifications: checked})}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Звуки</p>
+                      <p className="text-xs text-muted-foreground">Воспроизводить звуки</p>
+                    </div>
+                    <Switch 
+                      checked={settings.sounds}
+                      onCheckedChange={(checked) => setSettings({...settings, sounds: checked})}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Вибрация</p>
+                      <p className="text-xs text-muted-foreground">Вибрировать при уведомлениях</p>
+                    </div>
+                    <Switch 
+                      checked={settings.vibration}
+                      onCheckedChange={(checked) => setSettings({...settings, vibration: checked})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Устройства */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Smartphone" size={20} className="text-primary" />
+                  <h3 className="font-semibold text-lg">Устройства</h3>
+                </div>
+                <div className="ml-7 space-y-3">
+                  <div className="p-3 rounded-lg bg-card border border-border hover:bg-accent/10 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+                        <Icon name="Monitor" size={20} className="text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">MacBook Pro</p>
+                        <p className="text-xs text-muted-foreground">Москва • Сейчас активен</p>
+                      </div>
+                      <Icon name="Circle" size={8} className="text-green-500 fill-green-500" />
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card border border-border hover:bg-accent/10 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+                        <Icon name="Smartphone" size={20} className="text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">iPhone 15 Pro</p>
+                        <p className="text-xs text-muted-foreground">Москва • 2 часа назад</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Премиум */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Crown" size={20} className="text-yellow-500" />
+                  <h3 className="font-semibold text-lg gradient-primary bg-clip-text text-transparent">Premium</h3>
+                </div>
+                <div className="ml-7">
+                  <div className="p-4 rounded-xl gradient-primary relative overflow-hidden">
+                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="relative z-10">
+                      <h4 className="text-white font-bold text-lg mb-2">Попробуйте Premium</h4>
+                      <ul className="text-white/90 text-sm space-y-1 mb-4">
+                        <li>• Увеличенные файлы до 4 ГБ</li>
+                        <li>• Эксклюзивные стикеры</li>
+                        <li>• Без рекламы</li>
+                        <li>• Приоритетная поддержка</li>
+                      </ul>
+                      <Button className="w-full bg-white text-primary hover:bg-white/90">
+                        Подключить за 299 ₽/мес
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
         </div>
       )}
     </div>
